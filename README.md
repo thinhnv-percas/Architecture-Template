@@ -2,6 +2,7 @@
 > Tổng hợp từ kinh nghiệm thực chiến — áp dụng được cho mọi dự án Unity mới.
 > Đây là nguồn sự thật duy nhất về cấu trúc, convention, và quyết định kiến trúc.
 
+Unity Version Target: 2022.3.62f2
 ---
 
 ## Mục lục
