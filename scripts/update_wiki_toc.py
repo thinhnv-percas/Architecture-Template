@@ -153,7 +153,7 @@ def build_toc(wiki_dir: Path, repo_name: str) -> str:
     lines.append("")
 
     for group, pages in sorted(structure.items()):
-        #lines.append(f"### {group}\n")
+        lines.append(f"### {group}\n")
         for page in sorted(pages, key=lambda p: p["title"].lower()):
             slug = page["slug"]
             title = page["title"]
