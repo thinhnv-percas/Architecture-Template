@@ -10,33 +10,19 @@ jobs:
   update-toc:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Wiki Repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository }}.wiki
-          path: wiki-content
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate TOC
-        run: |
-          cd wiki-content
-          # Tạo header cho trang Home
-          echo "# Table of Contents" > Home.md
-          echo "" >> Home.md
-          
-          # Quét tất cả file .md, loại trừ chính file Home.md và Footer/Sidebar
-          # Sau đó định dạng thành list [Tên file](Tên-file)
-          find . -maxdepth 1 -name "*.md" ! -name "Home.md" ! -name "_*" | sort | while read -r file; do
-            filename=$(basename "$file" .md)
-            # Chuyển đổi tên file thành định dạng link của Wiki (thay khoảng trắng bằng dấu gạch ngang)
-            linkname=$(echo "$filename" | sed 's/ /-/g')
-            echo "* [[$filename|$linkname]]" >> Home.md
-          done
-
-      - name: Push updates to Wiki
-        run: |
-          cd wiki-content
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add Home.md
-          git diff-index --quiet HEAD || git commit -m "Add changes" && git push
+          - name: Checkout base code
+            uses: actions/checkout@v2
+            with:
+              path: base-code
+          - name: Checkout wiki code
+            uses: actions/checkout@v2
+            with:
+              repository: ${{github.repository}}.wiki
+              path: markdown
+          - name: Push to wiki
+            run: |
+              cd markdown
+              git config --local user.email "action@github.com"
+              git config --local user.name "GitHub Action"
+              git add .
+              git diff-index --quiet HEAD || git commit -m "Add changes" && git push
