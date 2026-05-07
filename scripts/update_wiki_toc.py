@@ -133,7 +133,7 @@ def parse_directory_structure(wiki_dir: Path) -> dict:
             no_prefix.extend(pages)
 
     if no_prefix:
-        structure.setdefault("Pages", []).extend(no_prefix)
+        structure.setdefault("Others", []).extend(no_prefix)
 
     return structure
 
@@ -152,7 +152,7 @@ def build_toc(wiki_dir: Path, repo_name: str) -> str:
                  f"auto-generated {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n")
     lines.append("")
 
-    for group, pages in sorted(structure.items()):
+    for group, pages in structure.items():
         lines.append(f"### {group}\n")
         for page in sorted(pages, key=lambda p: p["title"].lower()):
             slug = page["slug"]
