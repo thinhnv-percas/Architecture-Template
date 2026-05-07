@@ -2,7 +2,10 @@ name: Update Wiki TOC
 
 on:
   gollum: # Kích hoạt khi có bất kỳ thay đổi nào trên Wiki (tạo mới, chỉnh sửa)
-
+  
+permissions:
+  contents: write # Cấp quyền ghi nội dung cho GITHUB_TOKEN
+  
 jobs:
   update-toc:
     runs-on: ubuntu-latest
