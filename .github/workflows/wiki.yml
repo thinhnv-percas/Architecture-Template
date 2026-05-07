@@ -1,18 +1,45 @@
-name: Publish wiki
+name: Update Wiki TOC
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - wiki/**
-      - .github/workflows/publish-wiki.yml
-concurrency:
-  group: publish-wiki
-  cancel-in-progress: true
+  gollum: # Kích hoạt khi có bất kỳ thay đổi nào trên Wiki (tạo mới, chỉnh sửa)
+  
 permissions:
-  contents: write
+  contents: write # Cấp quyền ghi nội dung cho GITHUB_TOKEN
+  
 jobs:
-  publish-wiki:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: Andrew-Chen-Wang/github-wiki-action@v4
+      - uses: actions/checkout@v1
+      # Additional steps to generate documentation in "Documentation" directory
+      - name: Upload Documentation to Wiki
+        uses: SwiftDocOrg/github-wiki-publish-action@v1
+        with:
+          path: "Documentation"
+        env:
+          GH_PERSONAL_ACCESS_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+
+      - name: Generate TOC
+        run: |
+          cd wiki-content
+          # Tạo header cho trang Home
+          echo "# Table of Contents" > Home.md
+          echo "" >> Home.md
+          
+          # Quét tất cả file .md, loại trừ chính file Home.md và Footer/Sidebar
+          # Sau đó định dạng thành list [Tên file](Tên-file)
+          find . -maxdepth 1 -name "*.md" ! -name "Home.md" ! -name "_*" | sort | while read -r file; do
+            filename=$(basename "$file" .md)
+            # Chuyển đổi tên file thành định dạng link của Wiki (thay khoảng trắng bằng dấu gạch ngang)
+            linkname=$(echo "$filename" | sed 's/ /-/g')
+            echo "* [[$filename|$linkname]]" >> Home.md
+          done
+
+      - name: Push updates to Wiki
+        run: |
+          cd wiki-content
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Home.md
+          git diff-index --quiet HEAD || git commit -m "Add changes" && git push
