@@ -36,10 +36,9 @@ jobs:
             echo "* [[$filename|$linkname]]" >> Home.md
           done
 
-      - name: Push updates to Wiki
-        run: |
-          cd wiki-content
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add Home.md
-          git diff-index --quiet HEAD || git commit -m "Add changes" && git push
+      - name: Deploy to Wiki
+        uses: SwiftDocOrg/github-wiki-publish-action@v1
+        with:
+          path: wiki-docs
+          repository: ${{ github.repository }}.wiki
+          token: ${{ secrets.TOKEN_GITHUB }}
