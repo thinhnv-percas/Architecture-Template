@@ -1,26 +1,39 @@
-name: Update Wiki Home
+name: Update Wiki TOC
 
 on:
-  push:
-    paths:
-      - '*.md'
+  gollum: # Kích hoạt khi có bất kỳ thay đổi nào trên Wiki (tạo mới, chỉnh sửa)
 
 jobs:
-  update-home:
+  update-toc:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Wiki Repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki-content
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate Home
+      - name: Generate TOC
         run: |
-          echo "# Wiki Pages" > Home.md
-
-          for file in *.md
-          do
-            name="${file%.md}"
-
-            if [ "$name" != "Home" ] && [[ "$name" != _* ]]; then
-              echo "- [[$name]]" >> Home.md
-            fi
+          cd wiki-content
+          # Tạo header cho trang Home
+          echo "# Table of Contents" > Home.md
+          echo "" >> Home.md
+          
+          # Quét tất cả file .md, loại trừ chính file Home.md và Footer/Sidebar
+          # Sau đó định dạng thành list [Tên file](Tên-file)
+          find . -maxdepth 1 -name "*.md" ! -name "Home.md" ! -name "_*" | sort | while read -r file; do
+            filename=$(basename "$file" .md)
+            # Chuyển đổi tên file thành định dạng link của Wiki (thay khoảng trắng bằng dấu gạch ngang)
+            linkname=$(echo "$filename" | sed 's/ /-/g')
+            echo "* [[$filename|$linkname]]" >> Home.md
           done
+
+      - name: Push updates to Wiki
+        run: |
+          cd wiki-content
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Home.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update TOC in Home.md" && git push)
