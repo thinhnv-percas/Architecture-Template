@@ -1,0 +1,88 @@
+name: 📚 Auto-Update Wiki Table of Contents
+
+on:
+  # ── Trigger 1: any Markdown file pushed to the main branch ──────────────
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "**.md"
+      - "docs/**"
+      - "wiki/**"
+
+  # ── Trigger 2: any change to the GitHub Wiki (create/edit/delete page) ──
+  gollum: {}
+
+  # ── Trigger 3: manual run from Actions tab ──────────────────────────────
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (preview TOC without pushing)"
+        type: boolean
+        default: false
+
+# Prevent concurrent runs to avoid race conditions on wiki pushes
+concurrency:
+  group: wiki-toc-update
+  cancel-in-progress: false
+
+jobs:
+  update-wiki-toc:
+    name: Update Wiki Home TOC
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # needed to push to the wiki repo
+
+    steps:
+      # ── 1. Check out the main repo (for the Python script) ──────────────
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # ── 2. Clone the wiki (separate git repo) ───────────────────────────
+      - name: 📖 Clone wiki repository
+        run: |
+          WIKI_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git"
+
+          # Try to clone; if the wiki doesn't exist yet, initialise it.
+          if git clone "$WIKI_URL" wiki 2>/dev/null; then
+            echo "✅ Wiki cloned successfully."
+          else
+            echo "⚠️  Wiki not found — creating an empty wiki directory."
+            mkdir -p wiki
+            cd wiki
+            git init
+            git remote add origin "$WIKI_URL"
+            # GitHub requires at least one commit before the wiki is usable.
+            echo "# ${{ github.event.repository.name }} Wiki" > Home.md
+            git add Home.md
+            git commit -m "chore: initialise wiki"
+            git push --set-upstream origin master 2>/dev/null || true
+          fi
+
+      # ── 3. Set up Python ─────────────────────────────────────────────────
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ── 4. Run the TOC generator ─────────────────────────────────────────
+      - name: 🔄 Generate & inject TOC into Home.md
+        env:
+          WIKI_DIR:  wiki
+          REPO_NAME: ${{ github.event.repository.name }}
+          GIT_ACTOR: "github-actions[bot]"
+          GIT_EMAIL: "github-actions[bot]@users.noreply.github.com"
+          DRY_RUN:   ${{ github.event.inputs.dry_run || 'false' }}
+        run: python scripts/update_wiki_toc.py
+
+      # ── 5. (Optional) Print the updated Home.md for the job log ─────────
+      - name: 📋 Show updated Home.md
+        if: always()
+        run: |
+          echo "──────────── wiki/Home.md ────────────"
+          cat wiki/Home.md || echo "(file not found)"
+          echo "──────────────────────────────────────"
