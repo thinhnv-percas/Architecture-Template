@@ -1,28 +1,18 @@
-name: Update Wiki TOC
-
+name: Publish wiki
 on:
-  gollum: # Kích hoạt khi có bất kỳ thay đổi nào trên Wiki (tạo mới, chỉnh sửa)
-  
+  push:
+    branches: [main]
+    paths:
+      - wiki/**
+      - .github/workflows/publish-wiki.yml
+concurrency:
+  group: publish-wiki
+  cancel-in-progress: true
 permissions:
-  contents: write # Cấp quyền ghi nội dung cho GITHUB_TOKEN
-  
+  contents: write
 jobs:
-  update-toc:
+  publish-wiki:
     runs-on: ubuntu-latest
     steps:
-          - name: Checkout base code
-            uses: actions/checkout@v2
-            with:
-              path: base-code
-          - name: Checkout wiki code
-            uses: actions/checkout@v2
-            with:
-              repository: ${{github.repository}}.wiki
-              path: markdown
-          - name: Push to wiki
-            run: |
-              cd markdown
-              git config --local user.email "action@github.com"
-              git config --local user.name "GitHub Action"
-              git add .
-              git diff-index --quiet HEAD || git commit -m "Add changes" && git push
+      - uses: actions/checkout@v3
+      - uses: Andrew-Chen-Wang/github-wiki-action@v4
