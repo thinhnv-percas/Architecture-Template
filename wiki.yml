@@ -1,0 +1,26 @@
+name: Update Wiki Home
+
+on:
+  push:
+    paths:
+      - '*.md'
+
+jobs:
+  update-home:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate Home
+        run: |
+          echo "# Wiki Pages" > Home.md
+
+          for file in *.md
+          do
+            name="${file%.md}"
+
+            if [ "$name" != "Home" ] && [[ "$name" != _* ]]; then
+              echo "- [[$name]]" >> Home.md
+            fi
+          done
